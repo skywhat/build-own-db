@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
 
@@ -46,9 +47,7 @@ func SaveData2(path string, data []byte) error {
 	return os.Rename(tmp, path) // replace the original file
 }
 
-type BNode struct {
-	data []byte
-}
+type BNode []byte // can be dumped to the disk
 
 const (
 	BNODE_NODE = 1 // internal node without values
@@ -72,6 +71,20 @@ const BTREE_MAX_VAL_SIZE = 3000
 func init() {
 	node1max := HEADER + 8 + 2 + 4 + BTREE_MAX_KEY_SIZE + BTREE_MAX_VAL_SIZE
 	util.Assert(node1max <= BTREE_PAGE_SIZE)
+}
+
+// header
+func (node BNode) btype() uint16 {
+	return binary.LittleEndian.Uint16(node[0:2])
+}
+
+func (node BNode) nkeys() uint16 {
+	return binary.LittleEndian.Uint16(node[2:4])
+}
+
+func (node BNode) setHeader(btype uint16, nkeys uint16) {
+	binary.LittleEndian.PutUint16(node[0:2], btype)
+	binary.LittleEndian.PutUint16(node[2:4], nkeys)
 }
 
 func main() {
