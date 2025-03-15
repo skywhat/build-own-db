@@ -87,6 +87,18 @@ func (node BNode) setHeader(btype uint16, nkeys uint16) {
 	binary.LittleEndian.PutUint16(node[2:4], nkeys)
 }
 
+func (node BNode) getPtr(idx uint16) uint64 {
+	util.Assert(idx < node.nkeys())
+	pos := HEADER + 8*idx
+	return binary.LittleEndian.Uint64(node[pos:])
+}
+
+func (node BNode) setPtr(idx uint16, val uint64) {
+	util.Assert(idx < node.nkeys())
+	pos := HEADER + 8*idx
+	binary.LittleEndian.PutUint64(node[pos:], val)
+}
+
 func main() {
 	SaveData2("test.txt", []byte("hello"))
 }
