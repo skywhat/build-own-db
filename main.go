@@ -88,6 +88,7 @@ func (node BNode) setHeader(btype uint16, nkeys uint16) {
 	binary.LittleEndian.PutUint16(node[2:4], nkeys)
 }
 
+// read and write the child pointers array
 func (node BNode) getPtr(idx uint16) uint64 {
 	util.Assert(idx < node.nkeys())
 	pos := HEADER + 8*idx
@@ -114,6 +115,26 @@ func (node BNode) getOffset(idx uint16) uint16 {
 
 func (node BNode) setOffset(idx uint16, offset uint16) {
 	binary.LittleEndian.PutUint16(node[offsetPos(node, idx):], offset)
+}
+
+func (node BNode) kvPos(idx uint16) uint16 {
+	util.Assert(idx <= node.nkeys())
+	return HEADER + 8*node.nkeys() + 2*node.nkeys() + node.getOffset(idx)
+}
+
+func (node BNode) getKey(idx uint16) []byte {
+	util.Assert(idx <= node.nkeys())
+	keyLenPos := node.kvPos(idx)
+	keyLen := binary.LittleEndian.Uint16(node[keyLenPos:])
+	return node[keyLenPos+4:][:keyLen]
+}
+
+func (node BNode) getVal(idx uint16) []byte {
+	util.Assert(idx <= node.nkeys())
+	keyLenPos := node.kvPos(idx)
+	keyLen := binary.LittleEndian.Uint16(node[keyLenPos:])
+	valLen := binary.LittleEndian.Uint16(node[keyLenPos+2:])
+	return node[keyLenPos+4+keyLen:][:valLen]
 }
 
 func main() {
