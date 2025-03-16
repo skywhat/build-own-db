@@ -99,6 +99,22 @@ func (node BNode) setPtr(idx uint16, val uint64) {
 	binary.LittleEndian.PutUint64(node[pos:], val)
 }
 
+func offsetPos(node BNode, idx uint16) uint16 {
+	util.Assert(idx >= 1 && idx <= node.nkeys())
+	return HEADER + 8*node.nkeys() + 2*(idx-1)
+}
+
+func (node BNode) getOffset(idx uint16) uint16 {
+	if idx == 0 {
+		return 0
+	}
+	return binary.LittleEndian.Uint16(node[offsetPos(node, idx):])
+}
+
+func (node BNode) setOffset(idx uint16, offset uint16) {
+	binary.LittleEndian.PutUint16(node[offsetPos(node, idx):], offset)
+}
+
 func main() {
 	SaveData2("test.txt", []byte("hello"))
 }
