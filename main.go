@@ -69,8 +69,9 @@ const BTREE_MAX_KEY_SIZE = 1000
 const BTREE_MAX_VAL_SIZE = 3000
 
 func init() {
-	node1max := HEADER + 8 + 2 + 4 + BTREE_MAX_KEY_SIZE + BTREE_MAX_VAL_SIZE
-	util.Assert(node1max <= BTREE_PAGE_SIZE)
+	// type:2B + nkeys:2B + pointers:nkeys*8B + offsets:nkeys*8B + key-values(key_size:2B + val_size:2B + key + val)
+	node1max := HEADER + 1*8 + 1*2 + 4 + BTREE_MAX_KEY_SIZE + BTREE_MAX_VAL_SIZE
+	util.Assert(node1max <= BTREE_PAGE_SIZE) // maximum kv
 }
 
 // header
