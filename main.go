@@ -3,49 +3,9 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"os"
-
-	"math/rand"
 
 	"github.com/build-own-db/util"
 )
-
-func SaveData1(path string, data []byte) error {
-	fp, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0644)
-	if err != nil {
-		return err
-	}
-	defer fp.Close()
-
-	_, err = fp.Write(data)
-	if err != nil {
-		return err
-	}
-	return fp.Sync()
-}
-
-func SaveData2(path string, data []byte) error {
-	tmp := fmt.Sprintf("%s.tmp.%d", path, rand.Intn(100000))
-	fp, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0644)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		fp.Close()
-		if err != nil {
-			os.Remove(tmp)
-		}
-	}()
-
-	_, err = fp.Write(data) // write data to tmp file
-	if err != nil {
-		return err
-	}
-	if err := fp.Sync(); err != nil { // sync data to disk
-		return err
-	}
-	return os.Rename(tmp, path) // replace the original file
-}
 
 type BNode []byte // can be dumped to the disk
 
@@ -137,6 +97,26 @@ func (node BNode) getVal(idx uint16) []byte {
 	return node[keyLenPos+4+keyLen:][:valLen]
 }
 
+func nodeAppendKV(new BNode, idx uint16, ptr uint64, key []byte, val []byte) {
+	// ptrs
+	new.setPtr(idx, ptr)
+	// KVs
+	pos := new.kvPos(idx) // uses the offset value of the previous key
+	// 4-byte KV sizes
+	binary.LittleEndian.PutUint16(new[pos:], uint16(len(key)))
+	binary.LittleEndian.PutUint16(new[pos+2:], uint16(len(val)))
+	copy(new[pos+4:], key)
+	copy(new[pos+4+uint16(len(key)):], val)
+	new.setOffset(idx+1, new.getOffset(idx)+4+uint16(len(key)+len(val)))
+}
+
 func main() {
-	SaveData2("test.txt", []byte("hello"))
+	new := BNode(make([]byte, BTREE_PAGE_SIZE))
+	new.setHeader(BNODE_LEAF, 2)
+	nodeAppendKV(new, 0, 0, []byte("k1"), []byte("hi"))
+	nodeAppendKV(new, 1, 0, []byte("k3"), []byte("hello"))
+
+	for i := uint16(0); i < 2; i++ {
+		fmt.Printf("index:%v, key:%v, val:%v\n", i, string(new.getKey(i)), string(new.getVal(i)))
+	}
 }
