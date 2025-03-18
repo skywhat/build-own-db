@@ -110,6 +110,11 @@ func nodeAppendKV(new BNode, idx uint16, ptr uint64, key []byte, val []byte) {
 	new.setOffset(idx+1, new.getOffset(idx)+4+uint16(len(key)+len(val)))
 }
 
+// node size in bytes
+func (node BNode) nbytes() uint16 {
+	return node.kvPos(node.nkeys()) // use the offset value of the last key
+}
+
 func main() {
 	nkeys := uint16(3)
 	old := BNode(make([]byte, BTREE_PAGE_SIZE))
