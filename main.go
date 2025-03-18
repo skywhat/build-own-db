@@ -122,19 +122,29 @@ func main() {
 	nodeAppendKV(old, 0, 0, []byte("k1"), []byte("hi"))
 	nodeAppendKV(old, 1, 0, []byte("k2"), []byte("a"))
 	nodeAppendKV(old, 2, 0, []byte("k3"), []byte("hello"))
-
-	for i := uint16(0); i < nkeys; i++ {
-		fmt.Printf("index:%v, key:%v, val:%v\n", i, string(old.getKey(i)), string(old.getVal(i)))
-	}
+	printNode(old)
 
 	new := BNode(make([]byte, BTREE_PAGE_SIZE))
 	new.setHeader(BNODE_LEAF, nkeys)
 	nodeAppendKV(new, 0, 0, old.getKey(0), old.getVal(0))
 	nodeAppendKV(new, 1, 0, []byte("k2"), []byte("b"))
 	nodeAppendKV(new, 2, 0, old.getKey(2), old.getVal(2))
-
 	old = new
-	for i := uint16(0); i < nkeys; i++ {
-		fmt.Printf("index:%v, key:%v, val:%v\n", i, string(old.getKey(i)), string(old.getVal(i)))
+	printNode(old)
+
+	new = BNode(make([]byte, 2*BTREE_PAGE_SIZE))
+	new.setHeader(BNODE_LEAF, 4)
+	nodeAppendKV(new, 0, 0, []byte("a"), []byte("b"))
+	nodeAppendKV(new, 1, 0, old.getKey(0), old.getVal(0))
+	nodeAppendKV(new, 2, 0, old.getKey(1), old.getVal(1))
+	nodeAppendKV(new, 3, 0, old.getKey(2), old.getVal(2))
+	old = new
+	printNode(old)
+}
+
+func printNode(node BNode) {
+	fmt.Printf("node has %v keys\n", node.nkeys())
+	for i := uint16(0); i < node.nkeys(); i++ {
+		fmt.Printf("index:%v, key:%v, val:%v\n", i, string(node.getKey(i)), string(node.getVal(i)))
 	}
 }
