@@ -111,12 +111,25 @@ func nodeAppendKV(new BNode, idx uint16, ptr uint64, key []byte, val []byte) {
 }
 
 func main() {
-	new := BNode(make([]byte, BTREE_PAGE_SIZE))
-	new.setHeader(BNODE_LEAF, 2)
-	nodeAppendKV(new, 0, 0, []byte("k1"), []byte("hi"))
-	nodeAppendKV(new, 1, 0, []byte("k3"), []byte("hello"))
+	nkeys := uint16(3)
+	old := BNode(make([]byte, BTREE_PAGE_SIZE))
+	old.setHeader(BNODE_LEAF, nkeys)
+	nodeAppendKV(old, 0, 0, []byte("k1"), []byte("hi"))
+	nodeAppendKV(old, 1, 0, []byte("k2"), []byte("a"))
+	nodeAppendKV(old, 2, 0, []byte("k3"), []byte("hello"))
 
-	for i := uint16(0); i < 2; i++ {
-		fmt.Printf("index:%v, key:%v, val:%v\n", i, string(new.getKey(i)), string(new.getVal(i)))
+	for i := uint16(0); i < nkeys; i++ {
+		fmt.Printf("index:%v, key:%v, val:%v\n", i, string(old.getKey(i)), string(old.getVal(i)))
+	}
+
+	new := BNode(make([]byte, BTREE_PAGE_SIZE))
+	new.setHeader(BNODE_LEAF, nkeys)
+	nodeAppendKV(new, 0, 0, old.getKey(0), old.getVal(0))
+	nodeAppendKV(new, 1, 0, []byte("k2"), []byte("b"))
+	nodeAppendKV(new, 2, 0, old.getKey(2), old.getVal(2))
+
+	old = new
+	for i := uint16(0); i < nkeys; i++ {
+		fmt.Printf("index:%v, key:%v, val:%v\n", i, string(old.getKey(i)), string(old.getVal(i)))
 	}
 }
