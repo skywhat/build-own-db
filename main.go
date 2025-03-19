@@ -122,6 +122,15 @@ func nodeAppendRange(new BNode, old BNode, dstNew uint16, srcOld uint16, n uint1
 	}
 }
 
+func leftInsert(
+	new BNode, old BNode, idx uint16, key []byte, val []byte,
+) {
+	new.setHeader(BNODE_LEAF, old.nbytes()+1)
+	nodeAppendRange(new, old, 0, 0, idx)                    // copy the old keys from 0 to idx-1
+	nodeAppendKV(new, idx, 0, key, val)                     // the new key
+	nodeAppendRange(new, old, idx+1, idx, old.nbytes()-idx) // old keys from idx to old.nbytes()
+}
+
 func main() {
 	nkeys := uint16(3)
 	old := BNode(make([]byte, BTREE_PAGE_SIZE))
