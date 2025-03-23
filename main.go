@@ -122,13 +122,22 @@ func nodeAppendRange(new BNode, old BNode, dstNew uint16, srcOld uint16, n uint1
 	}
 }
 
-func leftInsert(
+func leafInsert(
 	new BNode, old BNode, idx uint16, key []byte, val []byte,
 ) {
 	new.setHeader(BNODE_LEAF, old.nbytes()+1)
 	nodeAppendRange(new, old, 0, 0, idx)                    // copy the old keys from 0 to idx-1
 	nodeAppendKV(new, idx, 0, key, val)                     // the new key
 	nodeAppendRange(new, old, idx+1, idx, old.nbytes()-idx) // old keys from idx to old.nbytes()
+}
+
+func leafupdate(
+	new BNode, old BNode, idx uint16, key []byte, val []byte,
+) {
+	new.setHeader(BNODE_LEAF, old.nbytes())
+	nodeAppendRange(new, old, 0, 0, idx)
+	nodeAppendKV(new, idx, 0, key, val)
+	nodeAppendRange(new, old, idx+1, idx+1, old.nbytes()-idx-1)
 }
 
 func main() {
