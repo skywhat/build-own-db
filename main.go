@@ -158,6 +158,36 @@ func nodeLookupLE(node BNode, key []byte) uint16 {
 	return i - 1
 }
 
+// Split an oversized node into 2 nodes, the 2nd node always fits.
+func nodeSplit2(left BNode, right BNode, old BNode) {
+	util.Assert(old.nbytes() >= 2)
+	// initial guess
+	nleft := old.nbytes() / 2
+	left_bytes := func() uint16 {
+		return HEADER + 8*nleft + 2*nleft + old.getOffset(nleft)
+	}
+	for left_bytes() > BTREE_PAGE_SIZE {
+		nleft--
+	}
+	util.Assert(nleft >= 1)
+
+	right_bytes := func() uint16 {
+		return old.nbytes() - left_bytes() + HEADER
+	}
+	for right_bytes() > BTREE_PAGE_SIZE {
+		nleft++
+	}
+	util.Assert(nleft < old.nkeys())
+	nright := old.nkeys() - nleft
+
+	// new node
+	left.setHeader(old.btype(), nleft)
+	right.setHeader(old.btype(), nright)
+	nodeAppendRange(left, old, 0, 0, nleft)
+	nodeAppendRange(right, old, 0, nleft, nright)
+	util.Assert(right.nbytes() <= BTREE_PAGE_SIZE)
+}
+
 func main() {
 	nkeys := uint16(3)
 	old := BNode(make([]byte, BTREE_PAGE_SIZE))
