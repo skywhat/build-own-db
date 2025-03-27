@@ -188,6 +188,27 @@ func nodeSplit2(left BNode, right BNode, old BNode) {
 	util.Assert(right.nbytes() <= BTREE_PAGE_SIZE)
 }
 
+func nodeSplit3(old BNode) (uint16, [3]BNode) {
+	if old.nbytes() <= BTREE_PAGE_SIZE {
+		return 1, [3]BNode{old} // not split, 1 node
+	}
+
+	left := BNode(make([]byte, 2*BTREE_PAGE_SIZE))
+	right := BNode(make([]byte, BTREE_PAGE_SIZE))
+
+	nodeSplit2(left, right, old)
+	if left.nbytes() <= BTREE_PAGE_SIZE {
+		left = left[:BTREE_PAGE_SIZE]
+		return 2, [3]BNode{left, right} // 2 nodes
+	}
+
+	mostleft := BNode(make([]byte, BTREE_PAGE_SIZE))
+	middle := BNode(make([]byte, BTREE_PAGE_SIZE))
+	nodeSplit2(mostleft, middle, left)
+	util.Assert(mostleft.nbytes() <= BTREE_PAGE_SIZE)
+	return 3, [3]BNode{mostleft, middle, right} // 3 nodes
+}
+
 func main() {
 	nkeys := uint16(3)
 	old := BNode(make([]byte, BTREE_PAGE_SIZE))
