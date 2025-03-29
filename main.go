@@ -16,11 +16,12 @@ const (
 )
 
 type BTree struct {
+	// root pointer (a nonzero page number)
 	root uint64
 	// callbacks for managing on disk pages
-	get func(uint64) BNode // dereference a pointer
-	new func(BNode) uint64 // allocate a new page
-	del func(uint64)       // deallocate a page
+	get func(uint64) []byte // read data from a page number
+	new func([]byte) uint64 // allocate a new page number with data
+	del func(uint64)        // deallocate a page number
 }
 
 const HEADER = 4
