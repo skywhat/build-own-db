@@ -139,6 +139,7 @@ func leafupdate(
 	new.setHeader(BNODE_LEAF, old.nbytes())
 	nodeAppendRange(new, old, 0, 0, idx)
 	nodeAppendKV(new, idx, 0, key, val)
+	// old key of old node at idx is replaced with the key just appended.
 	nodeAppendRange(new, old, idx+1, idx+1, old.nbytes()-idx-1)
 }
 
@@ -208,6 +209,44 @@ func nodeSplit3(old BNode) (uint16, [3]BNode) {
 	nodeSplit2(mostleft, middle, left)
 	util.Assert(mostleft.nbytes() <= BTREE_PAGE_SIZE)
 	return 3, [3]BNode{mostleft, middle, right} // 3 nodes
+}
+
+func treeInsert(tree *BTree, node BNode, key []byte, val []byte) BNode {
+	// the extra size allows it to exceed 1 page temporarily
+	new := BNode(make([]byte, 2*BTREE_PAGE_SIZE))
+	// where to insert the key?
+	idx := nodeLookupLE(node, key)
+	switch node.btype() {
+	case BNODE_LEAF: // leaf node
+		if bytes.Equal(key, node.getKey(idx)) {
+			leafupdate(new, node, idx, key, val) // found same key, just update it
+		} else {
+			leafInsert(new, node, idx+1, key, val) // not found, insert this new key
+		}
+	case BNODE_NODE: // internal node, walk into the child node.
+		// recursive insertion to the kid node
+		kptr := node.getPtr(idx)
+		knode := treeInsert(tree, tree.get(kptr), key, val)
+		// after insertion, split the result
+		nsplit, split := nodeSplit3(knode)
+		tree.del(kptr)
+		nodeReplaceKidN(tree, new, node, idx, split[:nsplit]...)
+	}
+	return new
+}
+
+func nodeReplaceKidN(
+	tree *BTree, new BNode, old BNode, idx uint16,
+	kids ...BNode,
+) {
+	inc := uint16(len(kids))
+	new.setHeader(BNODE_NODE, old.nkeys()+inc-1)
+	nodeAppendRange(new, old, 0, 0, idx)
+	for i, node := range kids {
+		nodeAppendKV(new, idx+uint16(i), tree.new(node), node.getKey(0), nil)
+	}
+	// old key of old node at idx is replaced with mulitple kids.
+	nodeAppendRange(new, old, idx+inc, idx+1, old.nkeys()-(idx+1))
 }
 
 func main() {
