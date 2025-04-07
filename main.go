@@ -24,6 +24,33 @@ type BTree struct {
 	del func(uint64)        // deallocate a page number
 }
 
+// insert a new key or update an existing key
+func (tree *BTree) Insert(key []byte, val []byte) error {
+	if err := checkLimit(key, val); err != nil {
+		return err
+	}
+	if tree.root == 0 {
+		root := BNode(make([]byte, BTREE_PAGE_SIZE))
+		// later ...
+		tree.root = tree.new(root)
+		return nil
+	}
+	node := treeInsert(tree, tree.get(tree.root), key, val)
+	nsplit, split := nodeSplit3(node)
+	tree.del(tree.root)
+	if nsplit > 1 {
+		root := BNode(make([]byte, BTREE_PAGE_SIZE))
+		// later ...
+		tree.root = tree.new(root)
+	} else {
+		tree.root = tree.new(split[0])
+	}
+	return nil
+}
+
+// delete a key and returns whether the key was there
+// func (tree *BTree) Delete(key []byte) (bool, error)
+
 const HEADER = 4
 
 const BTREE_PAGE_SIZE = 4096
